@@ -85,6 +85,13 @@ private getIkeaOnOffSwitchNames() {
 		"release button" //"Release button"
 	]
 }
+private getIkeaOpenCloseSwitchNames() {
+	[
+		"Button Up", //"Close button",
+		"Button Down", //"Open button"
+		"Button Release" //"Release button"
+	]
+}
 
 private getButtonLabel(buttonNum) {
 	def label = "Button ${buttonNum}"
@@ -94,7 +101,7 @@ private getButtonLabel(buttonNum) {
 	} else if (isIkeaOnOffSwitch()) {
 		label = ikeaOnOffSwitchNames[buttonNum - 1]
 	} else if (isIkeaOpenCloseSwitch()) {
-		label = ikeaOnOffSwitchNames[buttonNum - 1]
+		label = ikeaOpenCloseSwitchNames[buttonNum - 1]
 	}
 
 	return label
@@ -112,24 +119,25 @@ private void createChildButtonDevices(numberOfButtons) {
 	for (i in 1..numberOfButtons) {
 		log.debug "Creating child $i"
         
-        def children = childDevices
-        def childDevice = children.find{"${device.deviceNetworkId}:${i}"}
+		def children = childDevices
+		def childDevice = children.find{"${device.deviceNetworkId}:${i}"}
         
-        if (!childDevice)
-        {
-            def supportedButtons = (isIkeaRemoteControl() && i == REMOTE_BUTTONS.MIDDLE) ? ["pushed"] : ["pushed", "held"]
-            def child = addChildDevice("Child Button", "${device.deviceNetworkId}:${i}", device.hubId,
-                    [completedSetup: true, label: getButtonName(i),
-                     isComponent: true, componentName: "button$i", componentLabel: getButtonLabel(i)])
+		try
+		{
+			deleteChildDevice("${device.deviceNetworkId}:${i}")
+		}
+		catch(e)
+		{
+			// do nothing
+		}
+		def supportedButtons = (isIkeaRemoteControl() && i == REMOTE_BUTTONS.MIDDLE) ? ["pushed"] : ["pushed", "held"]
+		def child = addChildDevice("Child Button", "${device.deviceNetworkId}:${i}", device.hubId,
+		    [completedSetup: true, label: getButtonName(i),
+		     isComponent: true, componentName: "button$i", componentLabel: getButtonLabel(i)])
 
-            child.sendEvent(name: "supportedButtonValues", value: supportedButtons.encodeAsJSON(), displayed: false)
-            child.sendEvent(name: "numberOfButtons", value: 1, displayed: false)
-            child.sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], displayed: false)
-        }
-        else
-        {
-        	log.debug "Children ${device.deviceNetworkId}:${i}, already exists, skiping..."
-        }
+		child.sendEvent(name: "supportedButtonValues", value: supportedButtons.encodeAsJSON(), displayed: false)
+		child.sendEvent(name: "numberOfButtons", value: 1, displayed: false)
+		child.sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], displayed: false)
 	}
 }
 
